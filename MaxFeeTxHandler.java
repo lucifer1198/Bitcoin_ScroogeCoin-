@@ -1,169 +1,156 @@
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.HashMap;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
-public class MaxFeeTxHandler {
-    private UTXOPool pool;
-    private double maxFee;
-    private ArrayList<Transaction> maxFeeTransactions;
-    private HashMap<Transaction, HashSet<Transaction>> graph;
+public class TestMaxFeeTxHandler {
+   private static boolean verify(Transaction[] allTxs1, UTXOPool uPool) {
+      Transaction[] copyTxs1 = new Transaction[allTxs1.length];
+      for (int i = 0; i < copyTxs1.length; i++)
+         copyTxs1[i] = allTxs1[i];
 
-    /**
-     * Creates a public ledger whose current UTXOPool (collection of unspent transaction outputs) is
-     * {@code utxoPool}. This should make a copy of utxoPool by using the UTXOPool(UTXOPool uPool)
-     * constructor.
-     */
-    public MaxFeeTxHandler(UTXOPool utxoPool) {
-        this.pool = new UTXOPool(utxoPool);
-        this.maxFee = 0;
-        this.maxFeeTransactions = new ArrayList<Transaction>();
-        this.graph = new HashMap<Transaction, HashSet<Transaction>>();
-    }
+      MaxFeeTxHandler student1 = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier1 = new MaxFeeTxHandlerVerifier(uPool);
 
-    /**
-     * @return true if:
-     * (1) all outputs claimed by {@code tx} are in the current UTXO pool,
-     * (2) the signatures on each input of {@code tx} are valid,
-     * (3) no UTXO is claimed multiple times by {@code tx},
-     * (4) all of {@code tx}s output values are non-negative, and
-     * (5) the sum of {@code tx}s input values is greater than or equal to the sum of its output
-     *     values; and false otherwise. (the difference can be thought of as transaction fee)
-     */
-    public boolean isValidTx(Transaction tx) {
+      System.out.println("Total Transactions = " + allTxs1.length);
+      Transaction[] stx1 = student1.handleTxs(copyTxs1);
+      System.out.println("Number of transactions returned valid by student = " + stx1.length);
+      boolean passed1 = verifier1.check(allTxs1, stx1);
 
-        // Step 1, 2, 3
-        double sumInput = 0;
-        Set<UTXO> utxoSet = new HashSet<UTXO>();
-        for (int i = 0; i < tx.numInputs(); i++) {
-            Transaction.Input input = tx.getInput(i);
-            UTXO tmp = new UTXO(input.prevTxHash, input.outputIndex);
+      return passed1;
+   }
+   
+   private static boolean verify(Transaction[] allTxs1, Transaction[] allTxs2, UTXOPool uPool) {
+      Transaction[] copyTxs1 = new Transaction[allTxs1.length];
+      for (int i = 0; i < copyTxs1.length; i++)
+         copyTxs1[i] = allTxs1[i];
 
-            if (utxoSet.contains(tmp))
-                return false;
+      Transaction[] copyTxs2 = new Transaction[allTxs2.length];
+      for (int i = 0; i < copyTxs2.length; i++)
+         copyTxs2[i] = allTxs2[i];
 
-            utxoSet.add(tmp);
-            if (pool.contains(tmp)) {
-                Transaction.Output output = pool.getTxOutput(tmp);
+      MaxFeeTxHandler student1 = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier1 = new MaxFeeTxHandlerVerifier(uPool);
 
-                if (!Crypto.verifySignature(output.address, tx.getRawDataToSign(i), input.signature)) {
-                    return false;
-                }
-                sumInput += output.value;
-            } else {
-                return false;
-            }
-        }
+      MaxFeeTxHandler student2 = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier2 = new MaxFeeTxHandlerVerifier(uPool);
 
-        // Step 4
-        double sumOutput = 0;
-        for (int i = 0; i < tx.numOutputs(); i++) {
-            Transaction.Output output = tx.getOutput(i);
-            if (output.value >= 0) {
-                sumOutput += output.value;
-            } else {
-                return false;
-            }
-        }
+      System.out.println("Total Transactions = " + allTxs1.length);
+      Transaction[] stx1 = student1.handleTxs(copyTxs1);
+      System.out.println("Number of transactions returned valid by student = " + stx1.length);
+      boolean passed1 = verifier1.check(allTxs1, stx1);
 
-        // Step 5
-        return sumInput >= sumOutput;
-    }
+      System.out.println("Total Transactions = " + allTxs2.length);
+      Transaction[] stx2 = student2.handleTxs(copyTxs2);
+      System.out.println("Number of transactions returned valid by student = " + stx2.length);
+      boolean passed2 = verifier2.check(allTxs2, stx2);
 
-    /**
-     * Handles each epoch by receiving an unordered array of proposed transactions, checking each
-     * transaction for correctness, returning a set of transactions with maximum total transaction fees -- i.e. maximize the sum over all
-     * transactions in the set of (sum of input values - sum of output values)).
-     */
-    public Transaction[] handleTxs(Transaction[] possibleTxs) {
-        // IMPLEMENT THIS
-        ArrayList<Transaction> possibleTransactions = new ArrayList<Transaction>();
-        for (int i = 0; i < possibleTxs.length; i++) {
-            possibleTransactions.add(possibleTxs[i]);
-            for (int j = 0; j < possibleTxs.length; j++) {
-                if (i != j) {
-                    if hasConnection(possibleTxs[i], possibleTxs[j]) {
-                        //
-                    }
-                }
-            }
-        }
+      return passed1 && passed2;
+   }
+   
+   private static boolean verify(Transaction[] allTxs1, Transaction[] allTxs2, 
+         Transaction[] allTxs3, UTXOPool uPool) {
+      Transaction[] copyTxs1 = new Transaction[allTxs1.length];
+      for (int i = 0; i < copyTxs1.length; i++)
+         copyTxs1[i] = allTxs1[i];
 
-        ArrayList<Transaction> validTransactions = new ArrayList<Transaction>();
+      Transaction[] copyTxs2 = new Transaction[allTxs2.length];
+      for (int i = 0; i < copyTxs2.length; i++)
+         copyTxs2[i] = allTxs2[i];
 
-        // TODO:
-        // 1. Separate transactions into groups which have no connection to other groups
-        // 2. When choosing transactions within a group, never choose tx without connection
+      Transaction[] copyTxs3 = new Transaction[allTxs3.length];
+      for (int i = 0; i < copyTxs3.length; i++)
+         copyTxs3[i] = allTxs3[i];
 
-        handleTxs(possibleTransactions, validTransactions, 0);
+      MaxFeeTxHandler student1 = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier1 = new MaxFeeTxHandlerVerifier(uPool);
 
-        Transaction[] results = new Transaction[maxFeeTransactions.size()];
-        results = maxFeeTransactions.toArray(results);
-        return results;
-    }
+      MaxFeeTxHandler student2 = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier2 = new MaxFeeTxHandlerVerifier(uPool);
 
-    public void handleTxs(ArrayList<Transaction> possibleTxs, ArrayList<Transaction> currentValidTxs, double currentFee) {
-        // for tx in transactions
-        //   check if tx is valid
-        //   if yes: handleTxs(tx, transaction - { tx })
-        //   if no: skip to next one
-        if (currentFee > this.maxFee) {
-            this.maxFee = currentFee;
-            this.maxFeeTransactions = currentValidTxs;
-        }
+      MaxFeeTxHandler student3 = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier3 = new MaxFeeTxHandlerVerifier(uPool);
 
-        if (possibleTxs.size() == 0)
-            return;
+      System.out.println("Total Transactions = " + allTxs1.length);
+      Transaction[] stx1 = student1.handleTxs(copyTxs1);
+      System.out.println("Number of transactions returned valid by student = " + stx1.length);
+      boolean passed1 = verifier1.check(allTxs1, stx1);
 
-        for (Transaction tx: possibleTxs) {
-            if (isValidTx(tx)) {
-                ArrayList<Transaction> newPossibleTxs = new ArrayList<Transaction>();
-                for (Transaction t: possibleTxs) {
-                    newPossibleTxs.add(t);
-                }
-                newPossibleTxs.remove(tx);
+      System.out.println("Total Transactions = " + allTxs2.length);
+      Transaction[] stx2 = student2.handleTxs(copyTxs2);
+      System.out.println("Number of transactions returned valid by student = " + stx2.length);
+      boolean passed2 = verifier2.check(allTxs2, stx2);
 
-                ArrayList<Transaction> newCurrentValidTxs = new ArrayList<Transaction>();
-                for (Transaction t: currentValidTxs) {
-                    newCurrentValidTxs.add(t);
-                }
-                newCurrentValidTxs.add(tx);
+      System.out.println("Total Transactions = " + allTxs3.length);
+      Transaction[] stx3 = student3.handleTxs(copyTxs3);
+      System.out.println("Number of transactions returned valid by student = " + stx3.length);
+      boolean passed3 = verifier3.check(allTxs3, stx3);
 
-                double newFee = currentFee + calculateTransactionFee(tx);
-                handleTxs(newPossibleTxs, newCurrentValidTxs, newFee);
-            }
-        }
-    }
+      return passed1 && passed2 && passed3;
+   }
 
-    public double calculateTransactionFee(ArrayList<Transaction> transactions) {
-        double totalTransactionFee = 0;
-        for (Transaction tx: transactions) {
-            totalTransactionFee += calculateTransactionFee(tx);
-        }
+   private static boolean verifyPoolUpdate(Transaction[] allTxs1, Transaction[] allTxs2, 
+         Transaction[] allTxs3, UTXOPool uPool) {
+      Transaction[] copyTxs1 = new Transaction[allTxs1.length];
+      for (int i = 0; i < copyTxs1.length; i++)
+         copyTxs1[i] = allTxs1[i];
 
-        return totalTransactionFee;
-    }
+      Transaction[] copyTxs2 = new Transaction[allTxs2.length];
+      for (int i = 0; i < copyTxs2.length; i++)
+         copyTxs2[i] = allTxs2[i];
 
-    public double calculateTransactionFee(Transaction tx) {
-        if (tx == null)
-            return 0;
+      Transaction[] copyTxs3 = new Transaction[allTxs3.length];
+      for (int i = 0; i < copyTxs3.length; i++)
+         copyTxs3[i] = allTxs3[i];
 
-        double sumInput = 0;
-        for (Transaction.Input input: tx.getInputs()) {
-            Transaction.Output output = pool.getTxOutput(new UTXO(input.prevTxHash, input.outputIndex));
-            sumInput += output.value;
-        }
+      MaxFeeTxHandler student = new MaxFeeTxHandler(new UTXOPool(uPool));
+      MaxFeeTxHandlerVerifier verifier = new MaxFeeTxHandlerVerifier(uPool);
 
-        double sumOutput = 0;
-        for (int i = 0; i < tx.numOutputs(); i++) {
-            Transaction.Output output = tx.getOutput(i);
-            sumOutput += output.value;
-        }
+      System.out.println("Total Transactions = " + allTxs1.length);
+      Transaction[] stx1 = student.handleTxs(copyTxs1);
+      System.out.println("Number of transactions returned valid by student = " + stx1.length);
+      boolean passed1 = verifier.check(allTxs1, stx1);
 
-        return sumInput - sumOutput;
-    }
+      System.out.println("Total Transactions = " + allTxs2.length);
+      Transaction[] stx2 = student.handleTxs(copyTxs2);
+      System.out.println("Number of transactions returned valid by student = " + stx2.length);
+      boolean passed2 = verifier.check(allTxs2, stx2);
 
-    private boolean hasConnection(Transction a, Transaction b) {
+      System.out.println("Total Transactions = " + allTxs3.length);
+      Transaction[] stx3 = student.handleTxs(copyTxs3);
+      System.out.println("Number of transactions returned valid by student = " + stx3.length);
+      boolean passed3 = verifier.check(allTxs3, stx3);
 
-    }
+      return passed1 && passed2 && passed3;
+   }
+
+   // all transactions are simple and valid
+   public static int test1(UTXOPool uPool) throws FileNotFoundException, IOException {
+      System.out.println("Test 1: test handleTransactions() with simple and valid transactions");
+
+      String common = "files/SampleMaxFeeTxsTest1-";
+      String file1 = common + "1.txt";
+      String file2 = common + "2.txt";
+      String file3 = common + "3.txt";
+      Transaction[] allTxs1 = TransactionsArrayFileHandler.readTransactionsFromFile(file1);
+      Transaction[] allTxs2 = TransactionsArrayFileHandler.readTransactionsFromFile(file2);
+      Transaction[] allTxs3 = TransactionsArrayFileHandler.readTransactionsFromFile(file3);
+
+      return UtilCOS.printPassFail(verify(allTxs1, allTxs2, allTxs3, uPool));
+   }
+
+   public static void main(String[] args) throws FileNotFoundException, IOException {
+      String skpFile = "files/SampleMaxFeeKeyPairs.txt";
+      String supFile = "files/SampleMaxFeeUTXOPool.txt";
+      SampleKeyPairs skp = SampleKeyPairsFileHandler.readKeyPairsFromFile(skpFile);
+      SampleUTXOPool sup = SampleUTXOPoolFileHandler.readSampleUTXOPoolFromFile(skp, supFile);
+
+      UTXOPool uPool = sup.getPool();
+      int total = 0;
+      int numTests = 1;
+
+      UtilCOS.printTotalNumTests(numTests);  
+      total += test1(uPool);
+
+      System.out.println();
+      UtilCOS.printNumTestsPassed(total, numTests);
+   }
 }
